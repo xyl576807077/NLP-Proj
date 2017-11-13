@@ -1,7 +1,6 @@
 
 # coding: utf-8
 
-# In[7]:
 
 
 import pandas as pd
@@ -10,7 +9,6 @@ raw_data = pd.read_csv('./data/sentiment_word_tagging_train.csv', header=None, d
 str(raw_data.iloc[0].values[0])
 
 
-# In[8]:
 
 
 s = ''
@@ -20,7 +18,6 @@ for index, row in raw_data.iterrows():
     s = s + row.values[0]
 
 
-# In[9]:
 
 
 import re
@@ -45,41 +42,19 @@ for sentence in iter(sentences):
         labels.append(res[1])
 
 
-# In[10]:
 
 
 df_data = pd.DataFrame({'words': datas, 'tags': labels}, index=range(len(datas)))
-#　句子长度
+
 df_data['sentence_len'] = df_data['words'].apply(lambda words: len(words))
-df_data.head(2)
 
-
-# In[11]:
-
-
-df_data.to_csv('suibian.csv', index=None, sep='\t')
-
-
-# In[12]:
-
-
-import matplotlib.pyplot as plt
-df_data['sentence_len'].hist(bins=100)
-plt.xlim(0, 100)
-plt.xlabel('sentence_length')
-plt.ylabel('sentence_num')
-plt.title('Distribution of the Length of Sentence')
-plt.show()
-
-
-# In[13]:
 
 
 from itertools import chain
 all_words = list(chain(*df_data['words'].values))
 
 
-# In[14]:
+
 
 
 from keras.preprocessing.text import Tokenizer
@@ -87,7 +62,6 @@ tokenizer = Tokenizer(lower=False)
 tokenizer.fit_on_texts(all_words)
 
 
-# In[15]:
 
 
 from keras.preprocessing.sequence import pad_sequences
@@ -109,47 +83,34 @@ def word_to_index(sentence, flag):
 
 
 
-# In[16]:
+
 
 
 df_data['X'] = df_data['words'].apply(word_to_index, args = ['content'])
 df_data['Y'] = df_data['tags'].apply(word_to_index, args = ['sentiment'])
 
 
-# In[17]:
-
-
-df_data
-
-
-# In[18]:
 
 
 df_data['X'] = df_data['X'].apply(pad_sequences, args=[40, 'int32', 'post'])
 df_data['Y'] = df_data['Y'].apply(pad_sequences, args=[40, 'int32', 'post'])
 
 
-# In[35]:
 
 
 X = np.asarray(list(df_data['X'].values))
 y = np.asarray(list(df_data['Y'].values))
 
 
-# In[ ]:
 
 
 
-
-
-# In[36]:
 
 
 X = X.reshape(X.shape[0], X.shape[2])
 y = y.reshape(y.shape[0], y.shape[2])
 
 
-# In[47]:
 
 
 #将标签向量one-hot
@@ -164,23 +125,15 @@ def getY(y):
 y = getY(y)
 
 
-# In[50]:
-
 
 y = y.reshape(-1, 40, 6)
 
 
-# In[53]:
-
-
-all_words
-
-
-# In[ ]:
 
 
 maxlen = 40
 word_size = 128
+class_weight = {0:0.001, 1:0.8, 2:0.8, 3:0.8, 4:0.8, 5:0.2}
 from keras.layers import Dense, Embedding, LSTM, TimeDistributed, Input, Bidirectional
 from keras.models import Model
 
@@ -193,4 +146,5 @@ model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accur
 
 batch_size = 1024
 history = model.fit(X, y, batch_size=batch_size, epochs=10)
+model.save("sentiment_model.hdf5")
 
